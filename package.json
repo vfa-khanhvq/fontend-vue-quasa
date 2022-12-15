@@ -1,0 +1,48 @@
+{
+  "name": "creca-frontend",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite --port 8080",
+    "build": "vite build --mode development",
+    "cypress": "cypress open",
+    "cy:open:dev": "cypress open --env configFile=development",
+    "cy:run:dev": "cypress run --env configFile=development",
+    "cy:open:staging": "cypress open --env configFile=test",
+    "cy:run:staging": "cypress run --env configFile=test",
+    "build:prod": "vite build --mode production",
+    "preview": "vite preview --port 5050",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.13.5",
+    "@vue/apollo-option": "^4.0.0-alpha.16",
+    "@vueuse/core": "^9.2.0",
+    "apollo-cache-inmemory": "^1.5.1",
+    "apollo-client": "^2.5.1",
+    "apollo-link": "^1.2.14",
+    "apollo-link-context": "^1.0.20",
+    "apollo-link-error": "^1.1.13",
+    "apollo-link-http": "^1.5.14",
+    "cypress": "^10.4.0",
+    "dotenv": "^16.0.1",
+    "graphql": "^16.3.0",
+    "graphql-tag": "^2.12.6",
+    "isomorphic-fetch": "^3.0.0",
+    "moment": "^2.29.4",
+    "pinia": "^2.0.13",
+    "quasar": "^2.6.6",
+    "vue": "^3.2.31",
+    "vue-apollo": "^3.1.0",
+    "vue-i18n": "^9.1.9",
+    "vue-router": "^4.0.14"
+  },
+  "devDependencies": {
+    "@quasar/vite-plugin": "^1.0.9",
+    "@vitejs/plugin-vue": "^2.3.1",
+    "eslint": "^8.5.0",
+    "eslint-plugin-vue": "^8.2.0",
+    "prettier": "^2.6.2",
+    "sass": "~1.32.12",
+    "vite": "^2.9.1"
+  }
+}

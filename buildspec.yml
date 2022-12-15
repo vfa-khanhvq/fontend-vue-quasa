@@ -1,1 +1,27 @@
 version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 16
+  pre_build:
+    commands:
+      # install latest nodejs
+      # - n latest
+      - echo List directory files...
+      - ls
+      - echo Installing yarn...
+      - npm install yarn --force
+      - echo Installing source yarn dependencies...
+      - yarn install
+  build:
+    commands:
+      - echo Build started on `date`
+      - yarn build
+  post_build:
+    commands:
+      - aws s3 cp --recursive --acl public-read ./dist/ s3://connect-fe-dev/
+      #- aws cloudfront create-invalidation --distribution-id=E3CK9E2QR2N680 --paths '/*'
+artifacts:
+  files:
+    - '**/*'

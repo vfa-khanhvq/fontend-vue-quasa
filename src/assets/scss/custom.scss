@@ -1,0 +1,9 @@
+.q-field {
+  &--outlined &__control {
+    background-color: #fff;
+    border-radius: 16px;
+    &::before {
+      border: 0;
+    }
+  }
+}
