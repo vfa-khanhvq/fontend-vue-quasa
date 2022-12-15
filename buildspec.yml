@@ -20,7 +20,7 @@ phases:
       - yarn build
   post_build:
     commands:
-      - aws s3 cp --recursive --acl public-read ./dist/ s3://connect-fe-dev/
+      - aws s3 cp --recursive --acl public-read ./dist/ s3://connect-fe-host-dev/
       #- aws cloudfront create-invalidation --distribution-id=E3CK9E2QR2N680 --paths '/*'
 artifacts:
   files:
