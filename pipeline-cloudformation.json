@@ -1,254 +1,350 @@
 {
-    "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "Commont cloudformation for Connect",
-    "Parameters": {
-        "Environment": {
-            "Description": "(*) Format: dev/test/${staging/prod}-${countryCode}",
-            "Type": "String",
-            "ConstraintDescription": "must select a valid environment.",
-            "Default": "dev"
-        },
-        "BranchName": {
-            "Description": "(*) GitHub branch name.",
-            "Type": "String",
-            "Default": "develop"
-        },
-        "FrontendRepositoryName": {
-            "Description": "(*) GitHub frontend repository name.",
-            "Type": "String",
-            "Default": "fontend-vue-quasa"
-        },
-        "GitHubOwner": {
-            "Description": "(*) GitHub Owner.",
-            "Type": "String",
-            "Default": "vfa-khanhvq",
-            "NoEcho": "true"
-        },
-        "OAuthToken": {
-            "Description": "(*) GitHub OAuthToken.",
-            "Type": "String",
-            "NoEcho": "true",
-            "Default": "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"
-        }
+  "Parameters": {
+    "Environment": {
+      "Description": "(*) Format: dev/test/${staging/prod}-${countryCode}",
+      "Type": "String",
+      "ConstraintDescription": "must select a valid environment.",
+      "Default": "dev"
     },
-    "Resources": {
-        "CodeBuildRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Statement": [{
-                        "Action": ["sts:AssumeRole"],
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": ["codebuild.amazonaws.com"]
-                        }
-                    }],
-                    "Version": "2012-10-17"
-                },
-                "Path": "/",
-                "Policies": [{
-                    "PolicyName": "CodeBuildAccess",
-                    "PolicyDocument": {
-                        "Version": "2012-10-17",
-                        "Statement": [{
-                            "Action": [
-                                "logs:*",
-                                "ec2:CreateNetworkInterface",
-                                "ec2:DescribeNetworkInterfaces",
-                                "ec2:DeleteNetworkInterface",
-                                "ec2:DescribeSubnets",
-                                "ec2:DescribeSecurityGroups",
-                                "ec2:DescribeDhcpOptions",
-                                "ec2:DescribeVpcs",
-                                "ec2:CreateNetworkInterfacePermission",
-                                "s3:*",
-                                "ecr:*"
-                            ],
-                            "Effect": "Allow",
-                            "Resource": "*"
-                        }]
-                    }
-                }]
-            }
-        },
-        "FrontendCodeBuildProject": {
-            "Type": "AWS::CodeBuild::Project",
-            "Properties": {
-                "Name": {
-                    "Fn::Sub": "connect-frontend-${Environment}"
-                },
-                "ServiceRole": {
-                    "Ref": "CodeBuildRole"
-                },
-                "Artifacts": {
-                    "Type": "CODEPIPELINE"
-                },
-                "Cache": {
-                    "Type": "LOCAL",
-                    "Modes": ["LOCAL_DOCKER_LAYER_CACHE"]
-                },
-                "LogsConfig": {
-                    "CloudWatchLogs": {
-                        "GroupName": "CodeBuild",
-                        "Status": "ENABLED",
-                        "StreamName": {
-                            "Fn::Sub": "connect-frontend-${Environment}"
-                        }
-                    }
-                },
-                "Environment": {
-                    "Type": "LINUX_CONTAINER",
-                    "Image": "aws/codebuild/standard:4.0",
-                    "ComputeType": "BUILD_GENERAL1_SMALL",
-                    "PrivilegedMode": true
-                },
-                "Source": {
-                    "Type": "CODEPIPELINE"
-                }
-            }
-        },
-        "FrontendCodepipeline": {
-            "Type": "AWS::CodePipeline::Pipeline",
-            "Properties": {
-                "ArtifactStore": {
-                    "Type": "S3",
-                    "Location": {
-                        "Ref": "CodePipelineArtifactStoreBucket"
-                    }
-                },
-                "Name": {
-                    "Fn::Sub": "connect-frontend-${Environment}"
-                },
-                "RoleArn": {
-                    "Fn::GetAtt": ["CodePipelineServiceRole", "Arn"]
-                },
-                "Stages": [{
-                        "Name": "Source",
-                        "Actions": [{
-                            "Name": "Source",
-                            "ActionTypeId": {
-                                "Category": "Source",
-                                "Owner": "ThirdParty",
-                                "Version": 1,
-                                "Provider": "GitHub"
-                            },
-                            "OutputArtifacts": [{
-                                "Name": "SourceOutput"
-                            }],
-                            "Configuration": {
-                                "Owner": {
-                                    "Ref": "GitHubOwner"
-                                },
-                                "Repo": {
-                                    "Ref": "FrontendRepositoryName"
-                                },
-                                "Branch": {
-                                    "Ref": "BranchName"
-                                },
-                                "OAuthToken": {
-                                    "Ref": "OAuthToken"
-                                },
-                                "PollForSourceChanges": true
-                            },
-                            "RunOrder": 1
-                        }]
-                    },
-                    {
-                        "Name": "Build",
-                        "Actions": [{
-                            "Name": "Build",
-                            "ActionTypeId": {
-                                "Category": "Build",
-                                "Owner": "AWS",
-                                "Provider": "CodeBuild",
-                                "Version": "1"
-                            },
-                            "RunOrder": 1,
-                            "Configuration": {
-                                "ProjectName": {
-                                    "Fn::Sub": "connect-frontend-${Environment}"
-                                }
-                            },
-                            "InputArtifacts": [{
-                                "Name": "SourceOutput"
-                            }]
-                        }]
-                    }
-                ]
-            }
-        },
-        "CodePipelineServiceRole": {
-            "Type": "AWS::IAM::Role",
-            "Properties": {
-                "AssumeRolePolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [{
-                        "Effect": "Allow",
-                        "Principal": {
-                            "Service": ["codepipeline.amazonaws.com", "cloudformation.amazonaws.com"]
-                        },
-                        "Action": "sts:AssumeRole"
-                    }]
-                },
-                "Path": "/",
-                "Policies": [{
-                    "PolicyName": "AWS-CodePipeline-Service-3",
-                    "PolicyDocument": {
-                        "Version": "2012-10-17",
-                        "Statement": [{
-                                "Effect": "Allow",
-                                "Action": [
-                                    "codebuild:BatchGetBuilds",
-                                    "codebuild:StartBuild"
-                                ],
-                                "Resource": "*"
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Action": [
-                                    "iam:PassRole",
-                                    "iam:CreateRole",
-                                    "iam:AttachRolePolicy",
-                                    "iam:DetachRolePolicy"
-                                ],
-                                "Resource": "*"
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Action": ["iam:GetRole"],
-                                "Resource": "arn:aws:iam::*:role/lambda-execution-role*"
-                            },
-                            {
-                                "Effect": "Allow",
-                                "Action": [
-                                    "elasticbeanstalk:*",
-                                    "ec2:*",
-                                    "elasticloadbalancing:*",
-                                    "autoscaling:*",
-                                    "cloudwatch:*",
-                                    "s3:*",
-                                    "sns:*",
-                                    "cloudformation:*",
-                                    "rds:*",
-                                    "sqs:*",
-                                    "ecs:*",
-                                    "lambda:*",
-                                    "events:*"
-                                ],
-                                "Resource": "*"
-                            }
-                        ]
-                    }
-                }]
-            }
-        },
-        "CodePipelineArtifactStoreBucket": {
-            "Type": "AWS::S3::Bucket",
-            "Properties": {
-                "BucketName": {
-                    "Fn::Sub": "pipeline-artifac-store-bucket-${Environment}"
-                }
-            }
-        }
+    "BranchName": {
+      "Description": "(*) GitHub branch name.",
+      "Type": "String",
+      "Default": "develop"
+    },
+    "FrontendRepositoryName": {
+      "Description": "(*) GitHub frontend repository name.",
+      "Type": "String",
+      "Default": "fontend-vue-quasa"
+    },
+    "GitHubOwner": {
+      "Description": "(*) GitHub Owner.",
+      "Type": "String",
+      "Default": "vfa-khanhvq",
+      "NoEcho": "true"
+    },
+    "OAuthToken": {
+      "Description": "(*) GitHub OAuthToken.",
+      "Type": "String",
+      "NoEcho": "true",
+      "Default": "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"
     }
+  },
+  "Resources": {
+    "CodeBuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [{
+            "Action": ["sts:AssumeRole"],
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["codebuild.amazonaws.com"]
+            }
+          }],
+          "Version": "2012-10-17"
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "CodeBuildAccess",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Action": [
+                "logs:*",
+                "ec2:CreateNetworkInterface",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DescribeSubnets",
+                "ec2:DescribeSecurityGroups",
+                "ec2:DescribeDhcpOptions",
+                "ec2:DescribeVpcs",
+                "ec2:CreateNetworkInterfacePermission",
+                "s3:*",
+                "ecr:*"
+              ],
+              "Effect": "Allow",
+              "Resource": "*"
+            }]
+          }
+        }]
+      }
+    },
+    "FrontendCodeBuildProject": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "connect-frontend-${Environment}"
+        },
+        "ServiceRole": {
+          "Ref": "CodeBuildRole"
+        },
+        "Artifacts": {
+          "Type": "CODEPIPELINE"
+        },
+        "Cache": {
+          "Type": "LOCAL",
+          "Modes": ["LOCAL_DOCKER_LAYER_CACHE"]
+        },
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "GroupName": "CodeBuild",
+            "Status": "ENABLED",
+            "StreamName": {
+              "Fn::Sub": "connect-frontend-${Environment}"
+            }
+          }
+        },
+        "Environment": {
+          "Type": "LINUX_CONTAINER",
+          "Image": "aws/codebuild/amazonlinux2-x86_64-standard:4.0",
+          "ComputeType": "BUILD_GENERAL1_SMALL",
+          "PrivilegedMode": true,
+          "EnvironmentVariables":[
+            {
+                "Name": "CLOUD_FRONT_ID",
+                "Value": {
+                  "Ref": "cloudfrontdistribution"
+                }
+              }
+          ]
+        },
+        "Source": {
+          "Type": "CODEPIPELINE"
+        }
+      }
+    },
+    "FrontendCodepipeline": {
+      "Type": "AWS::CodePipeline::Pipeline",
+      "Properties": {
+        "ArtifactStore": {
+          "Type": "S3",
+          "Location": {
+            "Ref": "CodePipelineArtifactStoreBucket"
+          }
+        },
+        "Name": {
+          "Fn::Sub": "connect-frontend-${Environment}"
+        },
+        "RoleArn": {
+          "Fn::GetAtt": ["CodePipelineServiceRole", "Arn"]
+        },
+        "Stages": [{
+            "Name": "Source",
+            "Actions": [{
+              "Name": "Source",
+              "ActionTypeId": {
+                "Category": "Source",
+                "Owner": "ThirdParty",
+                "Version": 1,
+                "Provider": "GitHub"
+              },
+              "OutputArtifacts": [{
+                "Name": "SourceOutput"
+              }],
+              "Configuration": {
+                "Owner": {
+                  "Ref": "GitHubOwner"
+                },
+                "Repo": {
+                  "Ref": "FrontendRepositoryName"
+                },
+                "Branch": {
+                  "Ref": "BranchName"
+                },
+                "OAuthToken": {
+                  "Ref": "OAuthToken"
+                },
+                "PollForSourceChanges": true
+              },
+              "RunOrder": 1
+            }]
+          },
+          {
+            "Name": "Build",
+            "Actions": [{
+              "Name": "Build",
+              "ActionTypeId": {
+                "Category": "Build",
+                "Owner": "AWS",
+                "Provider": "CodeBuild",
+                "Version": "1"
+              },
+              "RunOrder": 1,
+              "Configuration": {
+                "ProjectName": {
+                  "Fn::Sub": "connect-frontend-${Environment}"
+                }
+              },
+              "InputArtifacts": [{
+                "Name": "SourceOutput"
+              }]
+            }]
+          }
+        ]
+      }
+    },
+    "CodePipelineServiceRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": {
+              "Service": ["codepipeline.amazonaws.com", "cloudformation.amazonaws.com"]
+            },
+            "Action": "sts:AssumeRole"
+          }]
+        },
+        "Path": "/",
+        "Policies": [{
+          "PolicyName": "AWS-CodePipeline-Service-3",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": [
+                  "codebuild:BatchGetBuilds",
+                  "codebuild:StartBuild"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "iam:PassRole",
+                  "iam:CreateRole",
+                  "iam:AttachRolePolicy",
+                  "iam:DetachRolePolicy"
+                ],
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": ["iam:GetRole"],
+                "Resource": "arn:aws:iam::*:role/lambda-execution-role*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "elasticbeanstalk:*",
+                  "ec2:*",
+                  "elasticloadbalancing:*",
+                  "autoscaling:*",
+                  "cloudwatch:*",
+                  "s3:*",
+                  "sns:*",
+                  "cloudformation:*",
+                  "rds:*",
+                  "sqs:*",
+                  "ecs:*",
+                  "lambda:*",
+                  "events:*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }]
+      }
+    },
+    "CodePipelineArtifactStoreBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "pipeline-artifac-store-bucket-${Environment}"
+        }
+      }
+    },
+    "FrontendBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "connect-fe-host-${Environment}"
+        },
+        "WebsiteConfiguration": {
+          "IndexDocument": "index.html",
+          "ErrorDocument": "index.html"
+        }
+      }
+    },
+    "FrontendBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "FrontendBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Sid": "public-get",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+              "s3:PutObject",
+              "s3:PutObjectAcl",
+              "s3:GetObject",
+              "s3:GetObjectAcl",
+              "s3:DeleteObject"
+            ],
+            "Resource": {
+              "Fn::Sub": "arn:aws:s3:::connect-fe-host-${Environment}/*"
+            }
+          }]
+        }
+      }
+    },
+    "cloudfrontdistribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Origins": [{
+            "Id": "S3Origin",
+            "DomainName": {
+              "Fn::GetAtt": ["FrontendBucket", "DomainName"]
+            },
+            "S3OriginConfig": {
+              "OriginAccessIdentity": {
+                "Fn::Sub": "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+              }
+            }
+          }],
+          "Enabled": "true",
+          "Comment": "",
+          "DefaultRootObject": "index.html",
+          "CacheBehaviors": [{
+            "TargetOriginId": "S3Origin",
+            "ForwardedValues": {
+              "QueryString": "false"
+            },
+            "ViewerProtocolPolicy": "allow-all",
+            "MinTTL": "1",
+            "PathPattern": "resources/*.json"
+          }],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "S3Origin",
+            "ForwardedValues": {
+              "QueryString": "false"
+            },
+            "ViewerProtocolPolicy": "allow-all",
+            "MinTTL": "1"
+          },
+          "CustomErrorResponses":[{
+            "ErrorCachingMinTTL": 10,
+            "ResponseCode": 403,
+            "ErrorCode": 403,
+            "ResponsePagePath": "/index.html"
+          }]
+        }
+      }
+    },
+    "CloudFrontOriginAccessIdentity": {
+      "Type": "AWS::CloudFront::CloudFrontOriginAccessIdentity",
+      "Properties": {
+        "CloudFrontOriginAccessIdentityConfig": {
+          "Comment": "this for test"
+        }
+      }
+    }
+  }
 }
