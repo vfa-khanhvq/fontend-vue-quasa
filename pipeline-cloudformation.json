@@ -26,7 +26,7 @@
       "Description": "(*) GitHub OAuthToken.",
       "Type": "String",
       "NoEcho": "true",
-      "Default": "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"
+      "Default": "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"
     }
   },
   "Resources": {
