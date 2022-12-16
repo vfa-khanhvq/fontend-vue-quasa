@@ -21,7 +21,7 @@ phases:
   post_build:
     commands:
       - aws s3 cp --recursive --acl public-read ./dist/ s3://connect-fe-host-dev/
-      #- aws cloudfront create-invalidation --distribution-id=E3CK9E2QR2N680 --paths '/*'
+      - aws cloudfront create-invalidation --distribution-id=${CLOUD_FRONT_ID} --paths '/*'
 artifacts:
   files:
     - '**/*'
