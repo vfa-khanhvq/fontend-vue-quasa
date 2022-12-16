@@ -26,7 +26,7 @@
       "Description": "(*) GitHub OAuthToken.",
       "Type": "String",
       "NoEcho": "true",
-      "Default": "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"
+      "Default": "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"
     }
   },
   "Resources": {
@@ -60,7 +60,8 @@
                 "ec2:DescribeVpcs",
                 "ec2:CreateNetworkInterfacePermission",
                 "s3:*",
-                "ecr:*"
+                "ecr:*",
+                "cloudfront:*"
               ],
               "Effect": "Allow",
               "Resource": "*"
@@ -99,13 +100,18 @@
           "Image": "aws/codebuild/amazonlinux2-x86_64-standard:4.0",
           "ComputeType": "BUILD_GENERAL1_SMALL",
           "PrivilegedMode": true,
-          "EnvironmentVariables":[
-            {
-                "Name": "CLOUD_FRONT_ID",
-                "Value": {
-                  "Ref": "cloudfrontdistribution"
-                }
+          "EnvironmentVariables": [{
+              "Name": "CLOUD_FRONT_ID",
+              "Value": {
+                "Ref": "cloudfrontdistribution"
               }
+            },
+            {
+              "Name": "BUCKET_NAME",
+              "Value": {
+                "Ref": "FrontendBucket"
+              }
+            }
           ]
         },
         "Source": {
@@ -329,7 +335,7 @@
             "ViewerProtocolPolicy": "allow-all",
             "MinTTL": "1"
           },
-          "CustomErrorResponses":[{
+          "CustomErrorResponses": [{
             "ErrorCachingMinTTL": 10,
             "ResponseCode": 403,
             "ErrorCode": 403,
